@@ -51,7 +51,7 @@ int main(int argc, char **argv)
     for (int i = 0; i < config.blockSize; i++) {
         //printf("buffer[%d] == %c\n", i, config.textBlock[i]);
     }
-    if(config.world_rank == 0)
+    if(config.world_rank != -1)
     {
         printf("apa: %c\n", config.textBlock[config.blockSize - 1]);
         printf("size %d Worldrank : %d buffer = %s\n", config.blockSize, config.world_rank, config.textBlock); 
@@ -124,18 +124,7 @@ void create_hash_map()
 
 void replace()
 {
-    int i = 0;
-    if(config.textBlock[i] == ' ' || config.textBlock[i] == '\n' || config.textBlock[i] == '\0')
-    {
-        config.textBlock++;
-    }
-    i = config.blockSize - 1;
-    if(config.textBlock[i] == ' ' || config.textBlock[i] == '\n' || config.textBlock[i] == '\0')
-    {
-        &config.blockSize = config.blockSize - 1;
-        printf("apa\n");
-    }
-    /*while(1)
+    while(1)
     {
         if(i == config.blockSize) break;
         if(config.textBlock[i] == ' ' || config.textBlock[i] == '\n' || config.textBlock[i] == '\0')
@@ -143,7 +132,7 @@ void replace()
             config.textBlock[i] = ' ';
         }
         i = i + 1;
-    } */
+    } 
 }
 
 int word_length(int position)
