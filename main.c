@@ -45,13 +45,19 @@ int main(int argc, char **argv)
     }
     MPI_Irecv(config.textBlock, config.blockSize, MPI_CHAR, 0, 0, 
     MPI_COMM_WORLD, &config.request);
-        
+    replace();
     create_hash_map();
     //printf("%d\n", config.world_rank);
     for (int i = 0; i < config.blockSize; i++) {
-         //printf("buffer[%d] == %c\n", i, config.textBlock[i]);
-     }
-    //printf("buffer = %s\n", config.textBlock); 
+        //printf("buffer[%d] == %c\n", i, config.textBlock[i]);
+    }
+    if(config.world_rank == 0)
+    {
+        printf("apa: %c\n", config.textBlock[config.blockSize - 1]);
+        printf("size %d Worldrank : %d buffer = %s\n", config.blockSize, config.world_rank, config.textBlock); 
+    }
+
+    
     MPI_Finalize();
 }
 
@@ -69,7 +75,7 @@ void create_hash_map()
     {
         /* Store the key string along side the numerical value so we can free it later */
         value = malloc(sizeof(data_struct_t));
-        snprintf(value->key_string, KEY_MAX_LENGTH, "%s%d", config.textBlock, index);
+        snprintf(value->key_string, KEY_MAX_LENGTH, "%s%d", KEY_PREFIX, index);
         value->number = index;
         error = hashmap_put(mymap, value->key_string, value);
         snprintf(key_string, KEY_MAX_LENGTH, "%s%d", KEY_PREFIX, index);
@@ -119,15 +125,25 @@ void create_hash_map()
 void replace()
 {
     int i = 0;
-    while(1)
+    if(config.textBlock[i] == ' ' || config.textBlock[i] == '\n' || config.textBlock[i] == '\0')
     {
-        i = i + 1;
-        if(i == config.blockSize) break;
-        if(config.textBlock[i] == ' ' || config.textBlock[i] == '\n')
-        {
-            config.textBlock[i] = '\0';
-        }
+        config.textBlock++;
     }
+    i = config.blockSize - 1;
+    if(config.textBlock[i] == ' ' || config.textBlock[i] == '\n' || config.textBlock[i] == '\0')
+    {
+        &config.blockSize = config.blockSize - 1;
+        printf("apa\n");
+    }
+    /*while(1)
+    {
+        if(i == config.blockSize) break;
+        if(config.textBlock[i] == ' ' || config.textBlock[i] == '\n' || config.textBlock[i] == '\0')
+        {
+            config.textBlock[i] = ' ';
+        }
+        i = i + 1;
+    } */
 }
 
 int word_length(int position)
@@ -150,7 +166,6 @@ void dispurse_data()
     int i;
     for(i = 1; i < config.world_size; i++)
     {
-        //printf("%c\n", config.text[i*config.blockSize]);
         MPI_Isend(&(config.text[i*config.blockSize]), config.blockSize, 
         MPI_CHAR, i, 0, MPI_COMM_WORLD, &config.request);
     }
@@ -159,6 +174,7 @@ void dispurse_data()
     {
         config.textBlock[i] = config.text[i];
     }
+    //printf("%c\n", config.text[config.blockSize - 1]);
 }
 
 void load_file()
@@ -171,7 +187,7 @@ void load_file()
     {
       fseek (f, 0, SEEK_END);
       config.textSize = ftell (f);
-      config.blockSize = config.textSize / config.world_size;
+      config.blockSize = (config.textSize + 1) / config.world_size;
       fseek (f, 0, SEEK_SET);
       config.text = (char*)malloc ((config.textSize+1)*sizeof(char));
       if (config.text)
