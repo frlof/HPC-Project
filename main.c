@@ -34,18 +34,14 @@ int main(int argc, char **argv)
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &config.world_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &config.world_size);
-    if(config.world_rank == 0) load_file();
-    if(config.world_rank == 0)
-    {
+    if(config.world_rank == 0){
+        load_file();
         dispurse_data();
-        config.textBlock = (char*)malloc ((config.blockSize)*sizeof(char));
     } 
-    else 
-    {
-        config.textBlock = (char*)malloc ((config.blockSize)*sizeof(char));
-    }
     MPI_Recv(&config.blockSize, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    MPI_Barrier(MPI_COMM_WORLD);
+
+    config.textBlock = (char*)malloc ((config.blockSize)*sizeof(char));
+
     MPI_Irecv(config.textBlock, config.blockSize, MPI_CHAR, 0, 1, MPI_COMM_WORLD, &config.request);
     replace();
     //printf("apaaaaa\n");
@@ -211,7 +207,7 @@ void load_file()
 {
     config.text;
     FILE * f;
-    f = fopen ("apa.txt", "rb"); //was "rb"
+    f = fopen ("test.txt", "rb"); //was "rb"
     if (f)
     {
       fseek (f, 0, SEEK_END);
