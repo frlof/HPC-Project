@@ -5,23 +5,35 @@
 #include "hashmap.h"
 #include <assert.h>
 #include <unistd.h>
+#include <math.h>
 
 #define KEY_MAX_LENGTH (64)
 //#define KEY_PREFIX ("somekey")
 #define KEY_COUNT (10)
 struct Config 
 {
-	MPI_File dataBlock;
     int world_rank;
     int world_size;
+
+    char* file;
+	MPI_File dataFile;
+    MPI_Offset dataFileSize;
     char* text;
-    char* textBlock;
     int textSize;
-    int blockSize;
+
+
+    char* textBlock;
+    int textBlockSize;
+    
     MPI_Request request;
     map_t mymap;
 };
 struct Config config;
+
+void load_file();
+void load_file_old();
+void dispurse_data();
+int jump_back(int position);
 
 typedef struct data_struct_s
 {
@@ -29,204 +41,85 @@ typedef struct data_struct_s
     int number;
 } data_struct_t;
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv){
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &config.world_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &config.world_size);
-    if(config.world_rank == 0) load_file();
-    if(config.world_rank == 0)
-    {
-        dispurse_data();
-        config.textBlock = (char*)malloc ((config.blockSize)*sizeof(char));
-    } 
-    else 
-    {
-        config.textBlock = (char*)malloc ((config.blockSize)*sizeof(char));
-    }
-    MPI_Recv(&config.blockSize, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Irecv(config.textBlock, config.blockSize, MPI_CHAR, 0, 1, MPI_COMM_WORLD, &config.request);
-    replace();
-    //printf("apaaaaa\n");
-    sleep(config.world_rank);
-    /*if(config.world_rank == 3)
-    {
-        //printf("%c\n", config.textBlock[config.blockSize+1]);
-    for(int i = 0; i < config.blockSize; i++)
-        {
-            //printf("[%d] %c %d\n", config.world_rank, config.textBlock[i], config.textBlock[i]);
-            printf("%c",config.textBlock[i]);
-        }
-        printf("Config size: %d\n", config.blockSize);
-    } */
 
-    if(config.world_rank != -1)
-    {
-        create_hash_map();
+    if(config.world_rank == 0){
+        config.file = "test.txt";
+        load_file();
+
+        /*printf("[%d]\n", config.world_rank);
+        for(int i = 0; i < config.textSize; i++){
+            printf("%c", config.text[i]);
+        }
+        printf("\n");*/
+
+        distribute_data();
+        
+    } 
+    else {
+        MPI_Recv(&config.textBlockSize, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        config.textBlock = (char*)malloc ((config.textBlockSize)*sizeof(char));
+        MPI_Recv(config.textBlock, config.textBlockSize, MPI_INT, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
- 
+
+    
+    sleep(config.world_rank);
+    printf("[%d] blockSize: %d\n", config.world_rank, config.textBlockSize);
+    //printf("[%d]\n", config.world_rank);
+    for(int i = 0; i < config.textBlockSize; i++){
+        printf("%c", config.textBlock[i]);
+
+    }
+    printf("\n");
+
+    sleep((config.world_rank+1)*1000);
+    //MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
 }
 
-void create_hash_map()
-{
-    //int index;
-    int error;
-    char key_string[KEY_MAX_LENGTH];
-    data_struct_t* value;
-    //printf("First: %d\n", config.world_rank);
-    config.mymap = hashmap_new();
-    //printf("Second: %d\n", config.world_rank);
-    /* First, populate the hash map with ascending values */
-    char *KEY_PREFIX;
-    int pos = 0;
-    int index = 0;
-    while(pos < config.blockSize)
-    {
-        KEY_PREFIX = &config.textBlock[pos];
-        /* Store the key string along side the numerical value so we can free it later */
-        value = malloc(sizeof(data_struct_t));
-        snprintf(value->key_string, KEY_MAX_LENGTH, "%s%d", &config.textBlock[pos], index);
-        value->number = index;
-        error = hashmap_put(config.mymap, value->key_string, value);
-        snprintf(key_string, KEY_MAX_LENGTH, "%s%d", &config.textBlock[pos], index);
-        hashmap_get(config.mymap, key_string, (void**)(&value));
-        assert(error==MAP_OK);
-        pos = pos + word_length(pos);
-        index += 1;
-    }
-    /* Now, check all of the expected values are there */
-    pos = 0;
-    index = 0;
-    while(pos < config.blockSize)
-    {
-        KEY_PREFIX = &config.textBlock[pos];
-        snprintf(key_string, KEY_MAX_LENGTH, "%s%d", &config.textBlock[pos], index);
+void load_file(){
+    MPI_File_open(MPI_COMM_SELF, config.file, MPI_MODE_RDONLY, MPI_INFO_NULL, &config.dataFile);
+    MPI_File_get_size(config.dataFile, &config.dataFileSize);
+    config.textSize = (int) config.dataFileSize;
+    config.text = (char*)malloc ((config.dataFileSize)*sizeof(char));
+    MPI_File_read_all(config.dataFile, config.text, config.dataFileSize, MPI_CHAR, MPI_STATUS_IGNORE);
+    MPI_File_close(&config.dataFile);
+}
 
-        error = hashmap_get(config.mymap, key_string, (void**)(&value));
-        
-        /* Make sure the value was both found and the correct number */
-        assert(error==MAP_OK);
-        assert(value->number==index);
-        pos = pos + word_length(pos);
-        index += 1;
-    }
-    //printf("Third: %d\n", config.world_rank);
-    /* Make sure that a value that wasn't in the map can't be found */
-    snprintf(key_string, KEY_MAX_LENGTH, "%s%d", &config.textBlock[pos], KEY_COUNT);
-
-    error = hashmap_get(config.mymap, key_string, (void**)(&value));
-        
-    /* Make sure the value was not found */
-    assert(error==MAP_MISSING);
-
-    /* Free all of the values we allocated and remove them from the map */
-    pos = 0;
-    index = 0;
-    while(pos < config.blockSize)
-    {
-        KEY_PREFIX = &config.textBlock[pos];
-        printf("CHar: %c\n", config.textBlock[pos]);
-        snprintf(key_string, KEY_MAX_LENGTH, "%s%d", &config.textBlock[pos], index);
-
-        error = hashmap_get(config.mymap, key_string, (void**)(&value));
-        assert(error==MAP_OK);
-        printf("World rank[%d] %s\n", config.world_rank, value->key_string);
-        error = hashmap_remove(config.mymap, key_string);
-        assert(error==MAP_OK);
-
-        free(value);        
-        pos = pos + word_length(pos);
-        index += 1;
-    }
+void distribute_data(){
+    int filePointerIndex = 0;
+    int preferredBlockSize = config.dataFileSize / config.world_size + 1;
+    int* blockLengths = (int*)malloc ((config.world_size)*sizeof(int));
     
-    /* Now, destroy the map */
-    hashmap_free(config.mymap);
+    blockLengths[0] = preferredBlockSize - jump_back(filePointerIndex + preferredBlockSize);
+    filePointerIndex += blockLengths[0] + 1;
+    config.textBlockSize = blockLengths[0];
+    config.textBlock = config.text;
 
-}
-
-void replace()
-{
-    for(int i = 0; i < config.blockSize; i++)
-    {
-        if(config.textBlock[i] == ' ' || config.textBlock[i] == '\n')
-        {
-            config.textBlock[i] = '\0';
+    for(int i = 1; i < config.world_size; i++){
+        if(i != config.world_size-1){
+            blockLengths[i] = preferredBlockSize - jump_back(filePointerIndex + preferredBlockSize);
+            MPI_Isend(&(blockLengths[i]), 1, MPI_INT, i, 0, MPI_COMM_WORLD, &config.request);
+            MPI_Isend(&(config.text[filePointerIndex]), blockLengths[i], MPI_CHAR, i, 1, MPI_COMM_WORLD, &config.request);
         }
+        else{
+            blockLengths[i] = config.textSize - filePointerIndex;
+            MPI_Isend(&(blockLengths[i]), 1, MPI_INT, i, 0, MPI_COMM_WORLD, &config.request);
+            MPI_Isend(&(config.text[filePointerIndex]), blockLengths[i], MPI_CHAR, i, 1, MPI_COMM_WORLD, &config.request);
+        }
+        filePointerIndex += blockLengths[i]+1;
     }
 }
 
-int word_length(int position)
-{
+int jump_back(int position){
     int i = 0;
-    while(1)
-    {
-        if(config.textBlock[position + i] == '\0')
-        {
-            return i+1;
-        }
-        i = i + 1;
-    }
-}
-int jump_back(int position)
-{
-    int i = 0;
-    while(1)
-    {
-        if(config.text[position - i] == ' ' || config.text[position - i] == '\0')
-        {
+    while(1){
+        if(config.text[position - i] == ' ' || config.text[position - i] == '\0' || config.text[position - i] == '\n'){
             return i;
         }
-        i = i + 1;
+        i++;
     }
 }
-
-void dispurse_data()
-{
-    int i;
-    int length;
-    int all = 0;
-    for(i = 0; i < config.world_size; i++)
-    {
-        length = config.blockSize - jump_back(all + config.blockSize) + 1;
-        if(i != config.world_size-1)
-        {
-            MPI_Isend(&length, 1, MPI_INT, i, 0, MPI_COMM_WORLD, &config.request);
-            MPI_Isend(&(config.text[all]), length, 
-            MPI_CHAR, i, 1, MPI_COMM_WORLD, &config.request);
-        }
-        else
-        {
-            int temp = config.blockSize*(i+1) - all;
-            MPI_Isend(&temp, 1, MPI_INT, i, 0, MPI_COMM_WORLD, &config.request);
-            MPI_Isend(&(config.text[all]), temp, 
-            MPI_CHAR, i, 1, MPI_COMM_WORLD, &config.request);
-        }
-        all += length;
-    }
-}
-
-void load_file()
-{
-    config.text;
-    FILE * f;
-    f = fopen ("apa.txt", "rb"); //was "rb"
-    if (f)
-    {
-      fseek (f, 0, SEEK_END);
-      config.textSize = ftell (f);
-      printf("config.text; %d\n", config.textSize);
-      config.blockSize = (config.textSize+1) / config.world_size;
-      fseek (f, 0, SEEK_SET);
-      config.text = (char*)malloc ((config.textSize+1)*sizeof(char));
-      if (config.text)
-      {
-        fread (config.text, sizeof(char), config.textSize, f);
-      }
-      fclose (f);
-    }
-    printf("apaa %c\n", config.text[config.textSize-1]);
-    config.text[config.textSize] = '\0';
-    printf("banan %c\n", config.text[config.textSize-1]);
-} 
