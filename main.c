@@ -200,13 +200,15 @@ void printHashmap(hashtable_t* hashmap, int myHashPart){
 
 
 int main(int argc, char **argv){
+    //printf("%s\n", argv[1]);
 
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &config.world_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &config.world_size);
 
     if(config.world_rank == 0){
-        config.file = "test.txt";
+        //config.file = "test.txt";
+        config.file = argv[1];
         load_file();
         /*printf("[%d]\n", config.world_rank);
         for(int i = 0; i < config.textSize; i++) printf("%c", config.text[i]);
