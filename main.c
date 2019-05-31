@@ -45,6 +45,8 @@ int hashmap_add(hashtable_t* hashmap, char* key, int wordLength, int value);
 int hashmap_get(hashtable_t* hashmap, char* key);
 void printHashmap(hashtable_t* hashmap, int myHashPart);
 
+void distribute_data();
+
 int skipChar(char character);
 
 
