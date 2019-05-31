@@ -53,7 +53,8 @@ hashtable_t* create_hash_map(int size){
     hashtable_t* hashtable = malloc(sizeof(hashtable_t));
     hashtable->size = size;
     hashtable->table = malloc(hashtable->size * sizeof(entry_t*));
-    for(int i = 0; i < size; i++){
+    int i;
+    for(i = 0; i < size; i++){
         hashtable->table[i] = NULL;
     }
     return hashtable;
@@ -171,7 +172,8 @@ void printHashmap(hashtable_t* hashmap, int myHashPart){
 
     printf("[%d][ ", config.world_rank);
     int first = 1;
-    for(int i = 0; i < hashmap->size; i++){
+    int i;
+    for(i = 0; i < hashmap->size; i++){
         if(myHashPart){
             if(i % config.world_size != config.world_rank){
                 continue;
@@ -231,7 +233,8 @@ int main(int argc, char **argv){
     int pointer = 0;
     int desintationCount[config.world_size];
     
-    for(int i = 0; i < config.world_size; i++) desintationCount[i] = 0;
+    int i;
+    for(i = 0; i < config.world_size; i++) desintationCount[i] = 0;
 
     while(1){
         for(int i = pointer; i < config.textBlockSize; i++){
@@ -241,7 +244,7 @@ int main(int argc, char **argv){
         if(pointer > config.textBlockSize-1) break;
         
         int wordLength = 0;
-        for(int i = pointer; i < config.textBlockSize; i++){
+        for(i = pointer; i < config.textBlockSize; i++){
             if(skipChar(config.textBlock[i])){
                 config.textBlock[i] = '\0';
                 wordLength++;
@@ -261,7 +264,7 @@ int main(int argc, char **argv){
     
     
     //sending the number of words to expect
-    for(int i = 0; i < config.world_size; i++){
+    for(i = 0; i < config.world_size; i++){
         if(i != config.world_rank){
             //printf("[%d] sending: %d\n", config.world_rank, desintationCount[i]);
             MPI_Isend(&(desintationCount[i]), 1, MPI_INT, i, 0, MPI_COMM_WORLD, &config.request);
@@ -270,10 +273,10 @@ int main(int argc, char **argv){
 
 
     int currentDesintationTag[config.world_size];
-    for(int i = 0; i < config.world_size; i++){
+    for(i = 0; i < config.world_size; i++){
         currentDesintationTag[i] = 1;
     }
-    for(int i = 0; i < hashmap->size; i++){
+    for(i = 0; i < hashmap->size; i++){
         int dest = i % config.world_size;
         if(dest != config.world_rank){
             if(hashmap->table[i] != NULL){
@@ -294,14 +297,15 @@ int main(int argc, char **argv){
         }
     }
 
-    for(int i = 0; i < config.world_size; i++){
+    for(i = 0; i < config.world_size; i++){
         if(i != config.world_rank){
             int sourceCount;
             MPI_Recv(&sourceCount, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             //desintationCount[index] += sourceCount
             //printf("[%d] %d\n", config.world_rank, sourceCount);
             int tag = 1;
-            for(int j = 0; j < sourceCount; j++){
+            int j;
+            for(j = 0; j < sourceCount; j++){
                 int wordLength;
                 MPI_Recv(&wordLength, 1, MPI_INT, i, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 tag++;
@@ -326,14 +330,15 @@ int main(int argc, char **argv){
     //printf("[%d] uniqueWords: %d\n", config.world_rank, desintationCount[config.world_rank]);
 
     if(config.world_rank == 0){
-        for(int i = 0; i < config.world_size; i++){
+        for(i = 0; i < config.world_size; i++){
             if(i != config.world_rank){
                 int sourceCount;
                 MPI_Recv(&sourceCount, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 //desintationCount[index] += sourceCount
                 //printf("[%d] %d\n", config.world_rank, sourceCount);
                 int tag = 1;
-                for(int j = 0; j < sourceCount; j++){
+                int j;
+                for(j = 0; j < sourceCount; j++){
                     int wordLength;
                     MPI_Recv(&wordLength, 1, MPI_INT, i, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                     tag++;
@@ -359,7 +364,7 @@ int main(int argc, char **argv){
     } else{
         MPI_Isend(&(desintationCount[config.world_rank]), 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &config.request);
         int destTag = 1;
-        for(int i = 0; i < hashmap->size; i++){
+        for(i = 0; i < hashmap->size; i++){
             int source = i % config.world_size;
             if(source == config.world_rank){
                 if(hashmap->table[i] != NULL){
@@ -423,8 +428,8 @@ void distribute_data(){
     config.textBlock = config.text;
 
     config.text[config.textBlockSize-1] = '\0';//for the block to work on thread 0 without copying the original text
-
-    for(int i = 1; i < config.world_size; i++){
+    int i;
+    for(i = 1; i < config.world_size; i++){
         if(i != config.world_size - 1){
             blockLengths[i] = preferredBlockSize - jump_back(filePointerIndex + preferredBlockSize) + 1;
 
