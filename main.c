@@ -239,7 +239,7 @@ int main(int argc, char **argv){
     for(i = 0; i < config.world_size; i++) desintationCount[i] = 0;
 
     while(1){
-        for(int i = pointer; i < config.textBlockSize; i++){
+        for(i = pointer; i < config.textBlockSize; i++){
             if(skipChar(config.textBlock[i])) pointer++;
             else break;
         }
