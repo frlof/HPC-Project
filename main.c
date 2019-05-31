@@ -41,7 +41,7 @@ void load_file_old();
 int jump_back(int position);
 
 unsigned long hashVal(unsigned char *str);
-int hashmap_add(hashtable_t* hashmap, char* key, int wordLength);
+int hashmap_add(hashtable_t* hashmap, char* key, int wordLength, int value);
 int hashmap_get(hashtable_t* hashmap, char* key);
 void printHashmap(hashtable_t* hashmap, int myHashPart);
 
@@ -59,7 +59,7 @@ hashtable_t* create_hash_map(int size){
     return hashtable;
 }
 
-int hashmap_add(hashtable_t* hashmap, char* key, int wordLength){
+int hashmap_add(hashtable_t* hashmap, char* key, int wordLength, int value){
     unsigned long hashval = hashVal(key);
     int index = hashval % hashmap->size;
     //hashval = 10;
@@ -68,7 +68,8 @@ int hashmap_add(hashtable_t* hashmap, char* key, int wordLength){
         entry_t* temp = hashmap->table[index];
         while(1){
             if(strcmp(temp->key, key) == 0){
-                temp->count = temp->count + 1;
+                //temp->count = temp->count + 1;
+                temp->count = temp->count + value;
                 newValue = 0;
                 break;
             }
@@ -76,7 +77,8 @@ int hashmap_add(hashtable_t* hashmap, char* key, int wordLength){
                 entry_t* entry = malloc(sizeof(entry_t));
                 entry->key = key;//unsafe operation
                 //entry->key = strdup(key);//safe operation
-                entry->count = 1;
+                //entry->count = 1;
+                entry->count = value;
                 entry->next = NULL;
                 entry->wordLength = wordLength;
                 temp->next = entry;
@@ -88,7 +90,49 @@ int hashmap_add(hashtable_t* hashmap, char* key, int wordLength){
         entry_t* entry = malloc(sizeof(entry_t));
         entry->key = key;//unsafe operation
         //entry->key = strdup(key);//safe operation
-        entry->count = 1;
+        //entry->count = 1;
+        entry->count = value;
+        entry->next = NULL;
+        entry->wordLength = wordLength;
+        hashmap->table[index] = entry;
+    }
+    if(newValue) return index;
+    else return -1;
+}
+
+int hashmap_set(hashtable_t* hashmap, char* key, int wordLength, int value){
+    unsigned long hashval = hashVal(key);
+    int index = hashval % hashmap->size;
+    //hashval = 10;
+    int newValue = 1;
+    if(hashmap->table[index] != NULL){
+        entry_t* temp = hashmap->table[index];
+        while(1){
+            if(strcmp(temp->key, key) == 0){
+                //temp->count = temp->count + 1;
+                temp->count = value;
+                newValue = 0;
+                break;
+            }
+            if(temp->next == NULL){
+                entry_t* entry = malloc(sizeof(entry_t));
+                entry->key = key;//unsafe operation
+                //entry->key = strdup(key);//safe operation
+                //entry->count = 1;
+                entry->count = value;
+                entry->next = NULL;
+                entry->wordLength = wordLength;
+                temp->next = entry;
+                break;
+            }
+            temp = temp->next;
+        }
+    }else{
+        entry_t* entry = malloc(sizeof(entry_t));
+        entry->key = key;//unsafe operation
+        //entry->key = strdup(key);//safe operation
+        //entry->count = 1;
+        entry->count = value;
         entry->next = NULL;
         entry->wordLength = wordLength;
         hashmap->table[index] = entry;
@@ -156,46 +200,13 @@ void printHashmap(hashtable_t* hashmap, int myHashPart){
 
 
 int main(int argc, char **argv){
-    /*hashtable_t* hashmap = create_hash_map(500);
-
-    char pirre[3] = "apa";
-
-    printf("string: %s\n", pirre);
-    hashmap_add(hashmap, pirre) ;
-
-    printf("string: %s\n", pirre);
-    
-
-    hashmap_add(hashmap, "kalle");
-    hashmap_add(hashmap, "kalle");
-    hashmap_add(hashmap, "sill");
-
-    printHashmap(hashmap);
-
-    int count = hashmap_get(hashmap, "apa");
-    printf("count apa: %d\n", count);
-    
-
-    count = hashmap_get(hashmap, "kalle");
-    printf("count kalle: %d\n", count);
-
-    count = hashmap_get(hashmap, "sill");
-    printf("count sill: %d\n", count);
-
-    count = hashmap_get(hashmap, "sipponen");
-    printf("count sipponen: %d\n", count);
-
-    printf("size: %d\n", hashmap->size);
-
-    unsigned long test = hashVal("struts");
-    printf("hashValue: %d\n", test);*/
 
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &config.world_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &config.world_size);
 
     if(config.world_rank == 0){
-        config.file = "apa.txt";
+        config.file = "test.txt";
         load_file();
         /*printf("[%d]\n", config.world_rank);
         for(int i = 0; i < config.textSize; i++) printf("%c", config.text[i]);
@@ -208,7 +219,7 @@ int main(int argc, char **argv){
         config.textBlock[config.textBlockSize-1] = '\0';
     }
 
-    sleep(config.world_rank);
+    //sleep(config.world_rank);
 
     /*printf("[%d] blockSize: %d\n", config.world_rank, config.textBlockSize);
     for(int i = 0; i < config.textBlockSize; i++) printf("%c", config.textBlock[i]);
@@ -236,7 +247,7 @@ int main(int argc, char **argv){
             }else wordLength++;
         }
         //printf("addedStrings: %s\n", &(config.textBlock[pointer]));
-        int index = hashmap_add(hashmap, &(config.textBlock[pointer]), wordLength);
+        int index = hashmap_add(hashmap, &(config.textBlock[pointer]), wordLength, 1);
         if(index != -1){
             index = index % config.world_size;
             desintationCount[index]++;
@@ -244,7 +255,7 @@ int main(int argc, char **argv){
         pointer += wordLength;   
     }
 
-    printHashmap(hashmap, 0);
+    //printHashmap(hashmap, 0);
     
     
     //sending the number of words to expect
@@ -285,6 +296,7 @@ int main(int argc, char **argv){
         if(i != config.world_rank){
             int sourceCount;
             MPI_Recv(&sourceCount, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            //desintationCount[index] += sourceCount
             //printf("[%d] %d\n", config.world_rank, sourceCount);
             int tag = 1;
             for(int j = 0; j < sourceCount; j++){
@@ -298,11 +310,76 @@ int main(int argc, char **argv){
                 MPI_Recv(&count, 1, MPI_INT, i, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 //printf("[%d]{key:\"%s\" count:%d}\n", config.world_rank, s, count);
                 tag++;
-                hashmap_add(hashmap, temp, wordLength);
+                int index = hashmap_add(hashmap, temp, wordLength, count);
+                //int index = hashmap_add(hashmap, &(config.textBlock[pointer]), wordLength, 1);
+                if(index != -1){
+                    index = index % config.world_size;
+                    desintationCount[index]++;
+                }
+
             }
         }
     }
-    printHashmap(hashmap, 1);
+    //printHashmap(hashmap, 1);
+    //printf("[%d] uniqueWords: %d\n", config.world_rank, desintationCount[config.world_rank]);
+
+    if(config.world_rank == 0){
+        for(int i = 0; i < config.world_size; i++){
+            if(i != config.world_rank){
+                int sourceCount;
+                MPI_Recv(&sourceCount, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                //desintationCount[index] += sourceCount
+                //printf("[%d] %d\n", config.world_rank, sourceCount);
+                int tag = 1;
+                for(int j = 0; j < sourceCount; j++){
+                    int wordLength;
+                    MPI_Recv(&wordLength, 1, MPI_INT, i, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    tag++;
+                    char* temp = (char*)malloc ((wordLength)*sizeof(char));
+                    MPI_Recv(temp, wordLength, MPI_CHAR, i, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    tag++;
+                    int count;
+                    MPI_Recv(&count, 1, MPI_INT, i, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    //printf("[%d]{key:\"%s\" count:%d}\n", config.world_rank, s, count);
+                    tag++;
+                    int index = hashmap_set(hashmap, temp, wordLength, count);
+                    //int index = hashmap_add(hashmap, &(config.textBlock[pointer]), wordLength, 1);
+                    if(index != -1){
+                        index = index % config.world_size;
+                        desintationCount[index]++;
+                    }
+
+                }
+            }
+        }
+        //printf("KALLE\n");
+        printHashmap(hashmap, 0);
+    } else{
+        MPI_Isend(&(desintationCount[config.world_rank]), 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &config.request);
+        int destTag = 1;
+        for(int i = 0; i < hashmap->size; i++){
+            int source = i % config.world_size;
+            if(source == config.world_rank){
+                if(hashmap->table[i] != NULL){
+                    entry_t* temp = hashmap->table[i];
+                    while(1){
+                        MPI_Isend(&temp->wordLength, 1, MPI_INT, 0, destTag, MPI_COMM_WORLD, &config.request);
+                        destTag++;
+                        MPI_Isend(temp->key, temp->wordLength, MPI_CHAR, 0, destTag, MPI_COMM_WORLD, &config.request);
+                        destTag++;
+                        MPI_Isend(&temp->count, 1, MPI_INT, 0, destTag, MPI_COMM_WORLD, &config.request);
+                        destTag++;
+                        if(temp->next == NULL){
+                            break;
+                        }
+                        temp = temp->next;
+                    }
+                }
+            }
+        }
+    }
+
+
 
     //MPI_Recv(&config.textBlockSize, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     //config.textBlock = (char*)malloc ((config.textBlockSize)*sizeof(char));
