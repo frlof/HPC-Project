@@ -15,10 +15,10 @@ struct Config
 	MPI_File dataFile;
     MPI_Offset dataFileSize;
     char* text;
-    int textSize;
+    unsigned long textSize;
 
     char* textBlock;
-    int textBlockSize;
+    unsigned long textBlockSize;
     
     MPI_Request request;
 };
@@ -224,7 +224,7 @@ int main(int argc, char **argv){
         /*printf("[%d]\n", config.world_rank);
         for(int i = 0; i < config.textSize; i++) printf("%c", config.text[i]);
         printf("\n");*/
-        distribute_data();
+        //distribute_data();
     } else {
         MPI_Recv(&config.textBlockSize, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         config.textBlock = (char*)malloc ((config.textBlockSize)*sizeof(char));
@@ -419,7 +419,7 @@ int skipChar(char character){
 void load_file(){
     MPI_File_open(MPI_COMM_SELF, config.file, MPI_MODE_RDONLY, MPI_INFO_NULL, &config.dataFile);
     MPI_File_get_size(config.dataFile, &config.dataFileSize);
-    config.textSize = (int) config.dataFileSize;
+    config.textSize = (unsigned long) config.dataFileSize;
     config.text = (char*)malloc ((config.dataFileSize + 1)*sizeof(char));
     MPI_File_read_all(config.dataFile, config.text, config.dataFileSize, MPI_CHAR, MPI_STATUS_IGNORE);
     MPI_File_close(&config.dataFile);
@@ -429,7 +429,7 @@ void load_file(){
 void distribute_data(){
     int filePointerIndex = 0;
     int preferredBlockSize = config.dataFileSize / config.world_size + 1;
-    int* blockLengths = (int*)malloc ((config.world_size)*sizeof(int));
+    unsigned long* blockLengths = (unsigned long*)malloc ((config.world_size)*sizeof(unsigned long));
     
     blockLengths[0] = preferredBlockSize - jump_back(filePointerIndex + preferredBlockSize) + 1;
     filePointerIndex += blockLengths[0];
