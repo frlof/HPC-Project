@@ -212,6 +212,9 @@ int main(int argc, char **argv){
 
     if(config.world_rank == 0){
         //config.file = "test.txt";
+        if(argc < 2){
+            exit(1);
+        }
         config.file = argv[1];
         load_file();
         /*printf("[%d]\n", config.world_rank);
@@ -230,7 +233,7 @@ int main(int argc, char **argv){
     /*printf("[%d] blockSize: %d\n", config.world_rank, config.textBlockSize);
     for(int i = 0; i < config.textBlockSize; i++) printf("%c", config.textBlock[i]);
     printf("\n");*/
-
+    
     hashtable_t* hashmap = create_hash_map(1000);
     int pointer = 0;
     int desintationCount[config.world_size];
@@ -362,7 +365,7 @@ int main(int argc, char **argv){
             }
         }
         //printf("KALLE\n");
-        printHashmap(hashmap, 0);
+        //printHashmap(hashmap, 0);
     } else{
         MPI_Isend(&(desintationCount[config.world_rank]), 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &config.request);
         int destTag = 1;
@@ -388,7 +391,7 @@ int main(int argc, char **argv){
         }
     }
 
-
+    printHashmap(hashmap, 0);
 
     //MPI_Recv(&config.textBlockSize, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     //config.textBlock = (char*)malloc ((config.textBlockSize)*sizeof(char));
