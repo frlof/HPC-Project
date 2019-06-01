@@ -211,11 +211,15 @@ int main(int argc, char **argv){
     MPI_Comm_size(MPI_COMM_WORLD, &config.world_size);
 
     if(config.world_rank == 0){
-        //config.file = "test.txt";
+        
+        //printf("args: %d\n", argc);
         if(argc < 2){
-            exit(1);
+            //exit(EXIT_FAILURE);
+            config.file = "./data/test.txt";
+        }else{
+            config.file = argv[1];
         }
-        config.file = argv[1];
+        
         load_file();
         /*printf("[%d]\n", config.world_rank);
         for(int i = 0; i < config.textSize; i++) printf("%c", config.text[i]);
