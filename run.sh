@@ -1,3 +1,3 @@
 #!/bin/bash
-mpicc main.c -o main
+mpicc ./src/main.c -o main
 mpirun -np $1 ./main $2
