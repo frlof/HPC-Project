@@ -405,6 +405,7 @@ void redistribute_key_values_reduce(hashtable_t* hashmap, int *desintationCount)
                     MPI_Isend(temp->key, temp->wordLength, MPI_CHAR, dest, 0, MPI_COMM_WORLD, &request);
                     //MPI_Wait(&config.request, MPI_STATUS_IGNORE);
                     MPI_Isend(&temp->count, 1, MPI_UNSIGNED_LONG, dest, 0, MPI_COMM_WORLD, &request);
+                    //printf("sending %s\n", temp->key);
                     //MPI_Wait(&config.request, MPI_STATUS_IGNORE);
                     if(temp->next == NULL){
                         break;
@@ -628,7 +629,7 @@ int main(int argc, char **argv){
     MPI_Comm_size(MPI_COMM_WORLD, &config.world_size);
 
     config.preferredBlockSize = 64000000;
-    hashtable_t* hashmap = create_hash_map(200000);
+    hashtable_t* hashmap = create_hash_map(2000000);
     config.textBlock = (char*)malloc ((config.preferredBlockSize+1)*sizeof(char));
     config.textBlock[config.preferredBlockSize] = '\0';
 
