@@ -567,29 +567,13 @@ void gather_result(hashtable_t* hashmap, int *desintationCount){
         int waitingForMessage = 0;
         MPI_Request request;
         
-        while(receivedMessages < messages){
-            if(!waitingForMessage){
-                MPI_Irecv(&wordLength, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &config.request);
-                waitingForMessage = 1;
-            }
-            int flag;
-            MPI_Test(&config.request, &flag, &status);
-            if(flag){
-                char temp[wordLength];
-                MPI_Recv(temp, wordLength, MPI_CHAR, status.MPI_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-                unsigned long count;
-                MPI_Recv(&count, 1, MPI_UNSIGNED_LONG, status.MPI_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-                int index = hashmap_add(hashmap, temp, wordLength, count);
-                if(index != -1){
-                    index = index % config.world_size;
-                    desintationCount[index]++;
-                }
-                //MPI_Irecv(&wordLength, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &config.request);
-                waitingForMessage = 0;
-                receivedMessages++;
-            }
+        for(i = 0; i < messages; i++){
+            MPI_Recv(&wordLength, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
+            char temp[wordLength];
+            MPI_Recv(temp, wordLength, MPI_CHAR, status.MPI_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            unsigned long count;
+            MPI_Recv(&count, 1, MPI_UNSIGNED_LONG, status.MPI_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            hashmap_set(hashmap, temp, wordLength, count);
         }
 
 
