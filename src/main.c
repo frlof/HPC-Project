@@ -742,7 +742,12 @@ int main(int argc, char **argv){
     MPI_Finalize();
 }
 int skipChar(char character){
-    if(0 <= character && character <= 32){
+    /*if(0 <= character && character <= 32){
+        return 1;
+    }else{
+        return 0;
+    }*/
+    if(0 <= character && character <= 47 || 58 <= character && character <= 63 || 91 <= character && character <= 96 ){
         return 1;
     }else{
         return 0;
