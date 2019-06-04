@@ -629,7 +629,12 @@ int main(int argc, char **argv){
     MPI_Comm_size(MPI_COMM_WORLD, &config.world_size);
 
     config.preferredBlockSize = 64000000;
-    hashtable_t* hashmap = create_hash_map(2000000);
+    hashtable_t* hashmap;// = create_hash_map(2000000);
+    if(config.world_rank == 0){
+        hashmap = create_hash_map(2000000);
+    }else{
+        hashmap = create_hash_map(2000000);
+    }
     config.textBlock = (char*)malloc ((config.preferredBlockSize+1)*sizeof(char));
     config.textBlock[config.preferredBlockSize] = '\0';
 
