@@ -565,7 +565,7 @@ void gather_result(hashtable_t* hashmap, int *desintationCount){
                     //tag++;
                     unsigned long count;
                     MPI_Recv(&count, 1, MPI_UNSIGNED_LONG, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                    printf("[%d]{key:\"%s\" count:%d}\n", config.world_rank, temp, count);
+                    //printf("[%d]{key:\"%s\" count:%d}\n", config.world_rank, temp, count);
                     //tag++;
                     int index = hashmap_set(hashmap, temp, wordLength, count);
                     //int index = hashmap_add(hashmap, &(config.textBlock[pointer]), wordLength, 1);
@@ -598,11 +598,17 @@ void gather_result(hashtable_t* hashmap, int *desintationCount){
                         //destTag++;
                         MPI_Isend(&temp->count, 1, MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD, &config.request);
                         MPI_Wait(&config.request, MPI_STATUS_IGNORE);
+
                         //destTag++;
                         if(temp->next == NULL){
                             break;
                         }
-                        temp = temp->next;
+                        entry_t* next = temp->next;
+                        free(temp->key);
+                        free(temp);
+                        temp = next;
+                        //temp = temp->next;
+
                     }
                 }
             }
@@ -622,12 +628,7 @@ int main(int argc, char **argv){
     MPI_Comm_size(MPI_COMM_WORLD, &config.world_size);
 
     config.preferredBlockSize = 64000000;
-    hashtable_t* hashmap;;
-    if(config.world_rank == 0){
-        hashmap = create_hash_map(300000000);
-    }else{
-        hashmap = create_hash_map(1000000);
-    }
+    hashtable_t* hashmap = create_hash_map(200000);
     config.textBlock = (char*)malloc ((config.preferredBlockSize+1)*sizeof(char));
     config.textBlock[config.preferredBlockSize] = '\0';
 
