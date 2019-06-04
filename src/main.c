@@ -256,25 +256,25 @@ void redistribute_key_values(hashtable_t* hashmap, int *desintationCount){
             //MPI_Wait(&config.request, MPI_STATUS_IGNORE);
         } 
     }
-    int currentDesintationTag[config.world_size];
+    /*int currentDesintationTag[config.world_size];
     for(i = 0; i < config.world_size; i++){
         currentDesintationTag[i] = 1;
-    }
+    }*/
     for(i = 0; i < hashmap->size; i++){
         int dest = i % config.world_size;
         if(dest != config.world_rank){
             if(hashmap->table[i] != NULL){
                 entry_t* temp = hashmap->table[i];
                 while(1){
-                    MPI_Isend(&temp->wordLength, 1, MPI_INT, dest, currentDesintationTag[dest], MPI_COMM_WORLD, &config.request);
+                    MPI_Isend(&temp->wordLength, 1, MPI_INT, dest, 0, MPI_COMM_WORLD, &config.request);
                     //MPI_Wait(&config.request, MPI_STATUS_IGNORE);
-                    currentDesintationTag[dest]++;
-                    MPI_Isend(temp->key, temp->wordLength, MPI_CHAR, dest, currentDesintationTag[dest], MPI_COMM_WORLD, &config.request);
+                    //currentDesintationTag[dest]++;
+                    MPI_Isend(temp->key, temp->wordLength, MPI_CHAR, dest, 0, MPI_COMM_WORLD, &config.request);
                     //MPI_Wait(&config.request, MPI_STATUS_IGNORE);
-                    currentDesintationTag[dest]++;
-                    MPI_Isend(&temp->count, 1, MPI_UNSIGNED_LONG, dest, currentDesintationTag[dest], MPI_COMM_WORLD, &config.request);
+                    //currentDesintationTag[dest]++;
+                    MPI_Isend(&temp->count, 1, MPI_UNSIGNED_LONG, dest, 0, MPI_COMM_WORLD, &config.request);
                     //MPI_Wait(&config.request, MPI_STATUS_IGNORE);
-                    currentDesintationTag[dest]++;
+                    //currentDesintationTag[dest]++;
                     if(temp->next == NULL){
                         break;
                     }
@@ -292,20 +292,20 @@ void reduce(hashtable_t* hashmap, int *desintationCount){
             int sourceCount;
             MPI_Recv(&sourceCount, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             //desintationCount[index] += sourceCount
-            int tag = 1;
+            //int tag = 1;
             int j;
             for(j = 0; j < sourceCount; j++){
                 int wordLength;
-                MPI_Recv(&wordLength, 1, MPI_INT, i, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                tag++;
+                MPI_Recv(&wordLength, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                //tag++;
                 //char* temp = (char*)malloc ((wordLength)*sizeof(char));
                 char temp[wordLength];
-                MPI_Recv(temp, wordLength, MPI_CHAR, i, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                tag++;
+                MPI_Recv(temp, wordLength, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                //tag++;
                 unsigned long count;
-                MPI_Recv(&count, 1, MPI_UNSIGNED_LONG, i, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                MPI_Recv(&count, 1, MPI_UNSIGNED_LONG, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 //printf("[%d]{key:\"%s\" count:%d}\n", config.world_rank, s, count);
-                tag++;
+                //tag++;
                 int index = hashmap_add(hashmap, temp, wordLength, count);
                 //int index = hashmap_add(hashmap, &(config.textBlock[pointer]), wordLength, 1);
                 if(index != -1){
@@ -327,20 +327,20 @@ void gather_result(hashtable_t* hashmap, int *desintationCount){
                 MPI_Recv(&sourceCount, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 //desintationCount[index] += sourceCount
                 //printf("[%d] %d\n", config.world_rank, sourceCount);
-                int tag = 1;
+                //int tag = 1;
                 int j;
                 for(j = 0; j < sourceCount; j++){
                     int wordLength;
-                    MPI_Recv(&wordLength, 1, MPI_INT, i, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                    tag++;
+                    MPI_Recv(&wordLength, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    //tag++;
                     //char* temp = (char*)malloc ((wordLength)*sizeof(char));
                     char temp[wordLength];
-                    MPI_Recv(temp, wordLength, MPI_CHAR, i, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                    tag++;
+                    MPI_Recv(temp, wordLength, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    //tag++;
                     unsigned long count;
-                    MPI_Recv(&count, 1, MPI_UNSIGNED_LONG, i, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    MPI_Recv(&count, 1, MPI_UNSIGNED_LONG, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                     //printf("[%d]{key:\"%s\" count:%d}\n", config.world_rank, s, count);
-                    tag++;
+                    //tag++;
                     int index = hashmap_set(hashmap, temp, wordLength, count);
                     //int index = hashmap_add(hashmap, &(config.textBlock[pointer]), wordLength, 1);
                     if(index != -1){
@@ -356,7 +356,7 @@ void gather_result(hashtable_t* hashmap, int *desintationCount){
     } else{
         MPI_Isend(&(desintationCount[config.world_rank]), 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &config.request);
         //MPI_Wait(&config.request, MPI_STATUS_IGNORE);
-        int destTag = 1;
+        //int destTag = 1;
         int i;
         for(i = 0; i < hashmap->size; i++){
             int source = i % config.world_size;
@@ -364,15 +364,15 @@ void gather_result(hashtable_t* hashmap, int *desintationCount){
                 if(hashmap->table[i] != NULL){
                     entry_t* temp = hashmap->table[i];
                     while(1){
-                        MPI_Isend(&temp->wordLength, 1, MPI_INT, 0, destTag, MPI_COMM_WORLD, &config.request);
+                        MPI_Isend(&temp->wordLength, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &config.request);
                         //MPI_Wait(&config.request, MPI_STATUS_IGNORE);
-                        destTag++;
-                        MPI_Isend(temp->key, temp->wordLength, MPI_CHAR, 0, destTag, MPI_COMM_WORLD, &config.request);
+                        //destTag++;
+                        MPI_Isend(temp->key, temp->wordLength, MPI_CHAR, 0, 0, MPI_COMM_WORLD, &config.request);
                         //MPI_Wait(&config.request, MPI_STATUS_IGNORE);
-                        destTag++;
-                        MPI_Isend(&temp->count, 1, MPI_UNSIGNED_LONG, 0, destTag, MPI_COMM_WORLD, &config.request);
+                        //destTag++;
+                        MPI_Isend(&temp->count, 1, MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD, &config.request);
                         //MPI_Wait(&config.request, MPI_STATUS_IGNORE);
-                        destTag++;
+                        //destTag++;
                         if(temp->next == NULL){
                             break;
                         }
@@ -396,7 +396,7 @@ int main(int argc, char **argv){
     MPI_Comm_size(MPI_COMM_WORLD, &config.world_size);
 
     config.preferredBlockSize = 64000000;
-    hashtable_t* hashmap = create_hash_map(50000);
+    hashtable_t* hashmap = create_hash_map(1000000);
     config.textBlock = (char*)malloc ((config.preferredBlockSize+1)*sizeof(char));
     config.textBlock[config.preferredBlockSize] = '\0';
 
@@ -434,23 +434,23 @@ int main(int argc, char **argv){
         //printf("waiting...\n");
         //sleep(config.world_rank*10);
         //printf("started...\n");
-        int tag = 0;
+        //int tag = 0;
         while(1){
             
             
             //printf("bako\n");
-            MPI_Recv(&config.textBlockSize, 1, MPI_INT, 0, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(&config.textBlockSize, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             //printf("SIZE: %d\n", config.textBlockSize);
-            tag++;
+            //tag++;
             //printf("struts1 %d\n", config.textBlockSize);
             if(config.textBlockSize == 0){
                 break;
             }
             //printf("pirre");
-            MPI_Recv(config.textBlock, config.textBlockSize, MPI_CHAR, 0, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(config.textBlock, config.textBlockSize, MPI_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             config.textBlockSize++;
             config.textBlock[config.textBlockSize-1] = '\0'; 
-            tag++;
+            //tag++;
 
             //sleep(config.world_rank);
 
@@ -516,37 +516,37 @@ void read_input_scatter(){
     //{key:"user," count:2474471}, {key:"avoid" count:1237236}
 
     int i;
-    int tags[config.world_size];
-    for(i = 0; i < config.world_size; i++) tags[i] = 0;
+    //int tags[config.world_size];
+    //for(i = 0; i < config.world_size; i++) tags[i] = 0;
     i=0;
-    //int blockSize;
-    int* blockLengths = (int*)malloc ((config.world_size)*sizeof(int));
+    int blockSize;
+    //int* blockLengths = (int*)malloc ((config.world_size)*sizeof(int));
     while(config.pointer < config.textSize){
         //int percentage = config.pointer/config.textSize;
-        //printf("%lu of %lu\n", config.pointer, config.textSize);
+        printf("%lu of %lu\n", config.pointer, config.textSize);
         //printf("%d\%\n");  
         //printf("Kalle\n");
         int dest = i % (config.world_size-1) + 1;
 
         if(config.pointer + config.preferredBlockSize < config.textSize){
-            //blockSize = config.preferredBlockSize;
-            blockLengths[dest] = config.preferredBlockSize;
+            blockSize = config.preferredBlockSize;
+            //blockLengths[dest] = config.preferredBlockSize;
 
         }else{
-            //blockSize = config.textSize - config.pointer;
-            blockLengths[dest] = config.textSize - config.pointer;
+            blockSize = config.textSize - config.pointer;
+            //blockLengths[dest] = config.textSize - config.pointer;
         }
         
         
-        MPI_File_read_all(config.dataFile, config.textBlock, blockLengths[dest], MPI_CHAR, MPI_STATUS_IGNORE);
+        MPI_File_read_all(config.dataFile, config.textBlock, blockSize, MPI_CHAR, MPI_STATUS_IGNORE);
 
         //printf("blockSize: %d\n", blockSize);
 
         //blockSize = blockSize - jump_back(blockSize-1);
         
-        MPI_Isend(&blockLengths[dest], 1, MPI_INT, dest, tags[dest], MPI_COMM_WORLD, &config.request);
+        MPI_Isend(&blockSize, 1, MPI_INT, dest, 0, MPI_COMM_WORLD, &config.request);
         MPI_Wait(&config.request, MPI_STATUS_IGNORE);
-        tags[dest]++;
+        //tags[dest]++;
 
         /*sleep(1);
 
@@ -560,17 +560,17 @@ void read_input_scatter(){
 
 
         //sleep(0.1);
-        MPI_Isend(config.textBlock, blockLengths[dest], MPI_CHAR, dest, tags[dest], MPI_COMM_WORLD, &config.request);
+        MPI_Isend(config.textBlock, blockSize, MPI_CHAR, dest, 0, MPI_COMM_WORLD, &config.request);
         MPI_Wait(&config.request, MPI_STATUS_IGNORE);
-        tags[dest]++;
+        //tags[dest]++;
         
         //sleep(0.9);
-        config.pointer += blockLengths[dest];
+        config.pointer += blockSize;
         i++;    
     }
     int temp = 0;
     for(i = 1; i < config.world_size; i++){
-        MPI_Isend(&temp, 1, MPI_INT, i, tags[i], MPI_COMM_WORLD, &config.request);
+        MPI_Isend(&temp, 1, MPI_INT, i, 0, MPI_COMM_WORLD, &config.request);
         //MPI_Wait(&config.request, MPI_STATUS_IGNORE);
     }
 }
