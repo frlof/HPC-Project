@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <unistd.h>
 #include <math.h>
+#include <time.h>
 
 struct Config 
 {
@@ -517,9 +518,60 @@ void redistribute_key_values_reduce(hashtable_t* hashmap, int *desintationCount)
             }
         }
     }
+    //printf("[%d]apa1\n", config.world_rank);
+    if(waitingForMessage){
+        MPI_Wait(&config.request, MPI_STATUS_IGNORE);
+        char temp[wordLength];
+        MPI_Recv(temp, wordLength, MPI_CHAR, status.MPI_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
+        unsigned long count;
+        MPI_Recv(&count, 1, MPI_UNSIGNED_LONG, status.MPI_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+        int index = hashmap_add(hashmap, temp, wordLength, count);
+        if(index != -1){
+            index = index % config.world_size;
+            desintationCount[index]++;
+        }
+        //MPI_Irecv(&wordLength, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &config.request);
+        waitingForMessage = 0;
+        receivedMessages++;
+    }
+    //printf("[%d]apa2\n", config.world_rank);
+    for(i = receivedMessages; i < messages; i++){
+        //if(config.world_rank == 0){
+        //    printf("%d out of %d\n", i, messages);
+        //}
+        //if(i == 9716){
+        //    printf("struts\n");
+        //}
+        MPI_Recv(&wordLength, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
+        //if(i == 9716){
+        //    printf("struts\n");
+        //}
+        char temp[wordLength];
+        MPI_Recv(temp, wordLength, MPI_CHAR, status.MPI_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        // if(i == 9716){
+        //     printf("struts\n");
+        // }
+
+        unsigned long count;
+        MPI_Recv(&count, 1, MPI_UNSIGNED_LONG, status.MPI_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        // if(i == 9716){
+        //     printf("struts\n");
+        // }
+
+        int index = hashmap_add(hashmap, temp, wordLength, count);
+        if(index != -1){
+            index = index % config.world_size;
+            desintationCount[index]++;
+        }
+        //MPI_Irecv(&wordLength, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &config.request);
+        waitingForMessage = 0;
+        receivedMessages++;
+    }
+    printf("[%d]apa3\n", config.world_rank);
     
-    while(receivedMessages < messages){
+    /*while(receivedMessages < messages){
         if(!waitingForMessage){
             MPI_Irecv(&wordLength, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &config.request);
             waitingForMessage = 1;
@@ -542,7 +594,7 @@ void redistribute_key_values_reduce(hashtable_t* hashmap, int *desintationCount)
             waitingForMessage = 0;
             receivedMessages++;
         }
-    }
+    }*/
 
 }
 
@@ -752,7 +804,7 @@ int main(int argc, char **argv){
     //printf("[%d] pelle: %lu\n", config.world_rank, desintationCount[1]);
     //{key:"may" count:2474472}, {key:"user," count:2474472}, {key:"avoid" count:1237236}
     //{key:"may" count:2474472}, {key:"user," count:2474472}, {key:"avoid" count:1237236}
-
+    clock_t start, end;
     if(config.world_rank == 0){
         
         if(argc < 2){
@@ -763,6 +815,7 @@ int main(int argc, char **argv){
         init_read();
 
         //sleep(10);
+        start = clock();
         read_input_scatter();
         //sendDone();
 
@@ -844,7 +897,10 @@ int main(int argc, char **argv){
 
         //output result
         if(config.world_rank == 0){
-            printHashmap(hashmap, 0);
+            //printHashmap(hashmap, 0);
+            end = clock();
+            double time = ((double) (end - start)/1000);
+            printf("Done in %f milliseconds\n", time);
         }
     }
 
