@@ -519,7 +519,7 @@ void redistribute_key_values_reduce(hashtable_t* hashmap, int *desintationCount)
         }
     }
     //printf("[%d]apa1\n", config.world_rank);
-    if(waitingForMessage){
+    /*if(waitingForMessage){
         MPI_Wait(&config.request, MPI_STATUS_IGNORE);
         char temp[wordLength];
         MPI_Recv(temp, wordLength, MPI_CHAR, status.MPI_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -538,27 +538,14 @@ void redistribute_key_values_reduce(hashtable_t* hashmap, int *desintationCount)
     }
     //printf("[%d]apa2\n", config.world_rank);
     for(i = receivedMessages; i < messages; i++){
-        //if(config.world_rank == 0){
-        //    printf("%d out of %d\n", i, messages);
-        //}
-        //if(i == 9716){
-        //    printf("struts\n");
-        //}
+
         MPI_Recv(&wordLength, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
-        //if(i == 9716){
-        //    printf("struts\n");
-        //}
+
         char temp[wordLength];
         MPI_Recv(temp, wordLength, MPI_CHAR, status.MPI_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        // if(i == 9716){
-        //     printf("struts\n");
-        // }
 
         unsigned long count;
         MPI_Recv(&count, 1, MPI_UNSIGNED_LONG, status.MPI_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        // if(i == 9716){
-        //     printf("struts\n");
-        // }
 
         int index = hashmap_add(hashmap, temp, wordLength, count);
         if(index != -1){
@@ -569,9 +556,9 @@ void redistribute_key_values_reduce(hashtable_t* hashmap, int *desintationCount)
         waitingForMessage = 0;
         receivedMessages++;
     }
-    printf("[%d]apa3\n", config.world_rank);
+    printf("[%d]apa3\n", config.world_rank);*/
     
-    /*while(receivedMessages < messages){
+    while(receivedMessages < messages){
         if(!waitingForMessage){
             MPI_Irecv(&wordLength, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &config.request);
             waitingForMessage = 1;
@@ -594,7 +581,7 @@ void redistribute_key_values_reduce(hashtable_t* hashmap, int *desintationCount)
             waitingForMessage = 0;
             receivedMessages++;
         }
-    }*/
+    }
 
 }
 
