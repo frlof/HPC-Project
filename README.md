@@ -16,7 +16,7 @@ Instructions for running the code on `Beskow`.
    2. **ssh** into beskow  
       *Example: `ssh username@beskow.pdc.kth.se`*
    3. **salloc** to allocate node  
-      *Example: `salloc -t 1:00:00 -A edu19.DD2356 --nodes=2`*
+      *Example: `salloc -t 1:00:00 -A edu19.DD2356 --nodes=1`*
    4. **module  swap** to change compiler to gnu  
       *Example: `module  swap  PrgEnv-cray  PrgEnv-gnu`*
    5. **module load** git  
